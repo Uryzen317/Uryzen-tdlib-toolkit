@@ -6,8 +6,12 @@ import {
   logger,
   handleAnimate,
   handleSmartText,
+  handleId,
 } from "./util/helper.js";
 import { handleDownload, handleDownloadQuality } from "./util/downloader.js";
+import { avatarClockHandler } from "./util/avatar.js";
+
+let sendInterval;
 
 // setting up the client , getting self id, configuring download server, setting up bio
 const { client, selfId } = await init();
@@ -43,5 +47,18 @@ client.addEventHandler((event) => {
     if (event.message.text.includes("/download ")) {
       handleDownload(client, event);
     }
+
+    // handle /send command
+    if (event.message.text.includes("/send")) {
+      handleDownload(client, event, (SI) => (sendInterval = SI));
+    }
+
+    // handle /id command
+    if (event.message.text.includes("/id")) {
+      handleId(client, event);
+    }
   }
 }, new NewMessage());
+
+// avatar clock
+setInterval(() => avatarClockHandler(client), 60 * 1000);

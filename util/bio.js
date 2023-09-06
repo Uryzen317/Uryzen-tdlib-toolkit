@@ -9,29 +9,33 @@ import { logger } from "./helper.js";
 import { weatherCodes, tempIcons } from "./constants.js";
 
 export async function updateBio(client, bioData) {
-  try {
-    // console.log(
-    //   `${getTimeIcon() + getTime().time} ${
-    //     bioData.weatherIcon + bioData.weather
-    //   } ${bioData.tempIcon + bioData.temp} ⛪️${bioData.miladiDate} 🕋${
-    //     bioData.hijriDate
-    //   } 🏠${bioData.jalaliDate} 🔥Uryzen317.ir`.length
-    // );
+  const rawText = `${getTimeIcon() + getTime().time} ${
+    bioData.weatherIcon + bioData.weather
+  } ${bioData.tempIcon + bioData.temp}°C ⛪️${bioData.miladiDate} 🕋${
+    bioData.hijriDate
+  } 🏠${bioData.jalaliDate}`;
 
-    const result = await client.invoke(
+  const addition = process.env.BIO_ADDITION;
+
+  try {
+    // 🕐12:06:52 🌦Cloudy ❄️24°C ⛪️22/04/03 🕋23/03/07 🏠02/03/01 💻 uryzen317.ir
+    await client.invoke(
       new Api.account.UpdateProfile({
-        about: `${getTimeIcon() + getTime().time} ${
-          bioData.weatherIcon + bioData.weather
-        } ${bioData.tempIcon + bioData.temp}°C ⛪️${bioData.miladiDate} 🕋${
-          bioData.hijriDate
-        } 🏠${bioData.jalaliDate} Uryzen317.ir`,
-        // 🕐12:06:52 🌦Cloudy ❄️24°C ⛪️22/04/03 🕋23/03/07 🏠02/03/01 Uryzen317.ir
+        about: rawText + " " + addition,
       })
     );
 
     logger("bio updated.", "bio");
   } catch (err) {
-    logger(err.message, "bio");
+    logger(err.message, "retrying the short text", "bio");
+
+    // retry with a shorter text
+    // 🕐12:06:52 🌦Cloudy ❄️24°C ⛪️22/04/03 🕋23/03/07 🏠02/03/01
+    await client.invoke(
+      new Api.account.UpdateProfile({
+        about: rawText,
+      })
+    );
   }
 }
 
@@ -45,7 +49,7 @@ export function getDateJalali(year, month, day) {
 }
 
 export function getDateHijri(year, month, day) {
-  return hijriMoment(`${year}/${month}/${day}`, "YYYY/MM/DD")
+  return hijriMoment(`${year}/${month}/${day - 1}`, "YYYY/MM/DD")
     .locale("en")
     .format("iYYYY/iM/iD")
     .split("")
@@ -128,14 +132,14 @@ export function getTimeIcon() {
   ];
 
   time.hour = parseInt(time.hour);
-  time.hour = time.hour > 11 ? time.hour - 11 : time.hour;
+  time.hour = time.hour > 11 ? time.hour - 12 : time.hour;
 
   if (parseInt(time.minute) < 30) {
     // time is full
-    return fullClocks[time.hour - 1] || fullClocks[0];
+    return fullClocks[time.hour] || fullClocks[0];
   } else {
     // time is half
-    return halfClocks[time.hour - 1] || halfClocks[0];
+    return halfClocks[time.hour] || halfClocks[0];
   }
 }
 

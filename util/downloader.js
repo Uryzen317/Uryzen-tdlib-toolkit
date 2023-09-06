@@ -263,7 +263,7 @@ export function downloadFile(link, quality) {
       " -o ./files/" +
       uniqueName +
       '/"%(title)s.%(ext)s"' +
-      " --no-warning ";
+      " --no-warning --embed-thumbnail";
     quality && (downloadString += " -f " + quality);
 
     exec(downloadString, async (err, _stdout, _stderr) => {

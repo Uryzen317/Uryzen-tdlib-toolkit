@@ -97,6 +97,16 @@ export function logger(data, type = "general") {
       console.log(chalk.cyan(`[${type}] | ${time} | ${data}`));
       break;
     }
+    // avatar logs are Blue bright
+    case "avatar": {
+      console.log(chalk.blueBright(`[${type}] | ${time} | ${data}`));
+      break;
+    }
+    // send logs are green bright
+    case "send": {
+      console.log(chalk.greenBright(`[${type}] | ${time} | ${data}`));
+      break;
+    }
   }
 }
 
@@ -301,9 +311,55 @@ export function smartTextUpdateTracker(text) {
 
 // get self id
 export async function getSelfId(client) {
+  // temp
+  return "227108642n";
+
   let selfPm = await client.sendMessage("me", {
     message: "Service started successfully.",
   });
 
   return selfPm.senderId.value;
+}
+
+// send command
+export async function handleSend(client, event, cb) {
+  logger("handling send command.", "send");
+
+  let { message, id } = event.message;
+  let chatId = event.isPrivate
+    ? event.message.peerId.userId.value
+    : event.message.peerId.channelId.value;
+
+  // parse the message text, time and rate
+  message = message.split("\n");
+  let commandsCount = message[0].split(" ");
+  let groupId = commandsCount.length > 1 ? parseInt(commandsCount[1]) : 1;
+  let time = commandsCount.length > 2 ? parseInt(commandsCount[2]) : 1;
+  message.shift();
+  message = message.length ? message.join("\n") : "there's no data.";
+
+  sendInterval = setInterval(async () => {
+    // sending message
+    logger("send message interval initiated.", "send");
+
+    await client.invoke(
+      new Api.messages.sendMessage({
+        silent: true,
+        message,
+        peer: new Api.InputPeerChat({
+          chatId: groupId,
+        }),
+      })
+    );
+  }, time * 1000);
+  cb(sendInterval);
+}
+
+// id command
+export async function handleId(client, event) {
+  let chatId =
+    event.message.peerId?.userId?.value ||
+    event.message.channelId?.userId?.value ||
+    event.message.peerId?.chatId?.value;
+  console.log(chatId);
 }
