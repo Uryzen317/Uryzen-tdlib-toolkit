@@ -84,9 +84,21 @@ export async function updateBioData() {
 
 export function getTime() {
   let date = new Date();
-  let hour = date.getHours().toString();
-  let minute = date.getMinutes().toString();
-  let seconds = date.getSeconds().toString();
+  let hour = date.getUTCHours() + 3;
+  let minute = date.getUTCMinutes() + 30;
+  let seconds = date.getUTCSeconds();
+
+  if (minute > 59) {
+    hour++;
+    minute -= 60;
+  }
+  if (hour > 23) {
+    hour -= 24;
+  }
+
+  seconds = seconds.toString();
+  minute = minute.toString();
+  hour = hour.toString();
 
   seconds = seconds.length == 2 ? seconds : `0${seconds}`;
   minute = minute.length == 2 ? minute : `0${minute}`;
