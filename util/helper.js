@@ -10,6 +10,7 @@ import { StringSession } from "telegram/sessions/index.js";
 import { animateables } from "./constants.js";
 import { startBioCrons } from "./bio.js";
 import { initDownloadModule } from "./downloader.js";
+import { configDownloadServer } from "./downloader.js";
 
 // setting up client
 export async function init() {
@@ -311,9 +312,6 @@ export function smartTextUpdateTracker(text) {
 
 // get self id
 export async function getSelfId(client) {
-  // temp
-  return "227108642n";
-
   let selfPm = await client.sendMessage("me", {
     message: "Service started successfully.",
   });
