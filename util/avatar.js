@@ -56,3 +56,7 @@ export async function avatarClockHandler(client) {
     logger("profile update failed :\n." + err, "avatar");
   }
 }
+
+export function initAvatarModule(client) {
+  setInterval(() => avatarClockHandler(client), 60 * 1000);
+}

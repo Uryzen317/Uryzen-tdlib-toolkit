@@ -59,6 +59,3 @@ client.addEventHandler((event) => {
     }
   }
 }, new NewMessage());
-
-// avatar clock
-setInterval(() => avatarClockHandler(client), 60 * 1000);

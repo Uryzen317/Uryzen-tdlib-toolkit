@@ -11,6 +11,7 @@ import { animateables } from "./constants.js";
 import { startBioCrons } from "./bio.js";
 import { initDownloadModule } from "./downloader.js";
 import { configDownloadServer } from "./downloader.js";
+import { initAvatarModule } from "./avatar.js";
 
 // setting up client
 export async function init() {
@@ -36,7 +37,8 @@ export async function init() {
   });
 
   logger("client is connected.", "general");
-  // logger(client.session.save(), 'general');
+  logger("Your string sesstion : ", "general");
+  logger(client.session.save(), "general");
 
   // get self id
   let selfId = await getSelfId(client);
@@ -49,6 +51,9 @@ export async function init() {
 
   // init donwload module
   await initDownloadModule();
+
+  // init avatar module
+  await initAvatarModule(client);
 
   return { client, selfId };
 }
@@ -357,7 +362,177 @@ export async function handleSend(client, event, cb) {
 export async function handleId(client, event) {
   let chatId =
     event.message.peerId?.userId?.value ||
-    event.message.channelId?.userId?.value ||
+    event.message.peerId?.channelId?.value ||
     event.message.peerId?.chatId?.value;
-  console.log(chatId);
+
+  let type;
+  event.message.peerId?.chatId && (type = "chat");
+  event.message.peerId?.userId && (type = "user");
+  event.message.peerId?.channelId && (type = "channel");
+  console.log(type);
+
+  // general chat data
+  if (!event.message.replyTo) {
+    let message;
+
+    // user
+    if (type == "user") {
+      const users = await client.invoke(
+        new Api.users.GetUsers({
+          id: [chatId],
+        })
+      );
+
+      const user = users[0];
+      const targetId = user.id.value;
+      message = `
+id : ${targetId}
+first name : ${user.firstName || "undefined"} 
+last name : ${user?.lastName || "undefined"}
+username : ${user?.username || "undefined"}
+deleted : ${user.deleted}
+bot : ${user.bot}
+verified : ${user.verified}
+restricted : ${user.restricted}
+scam : ${user.scam}
+fake : ${user.fake}
+premium : ${user.premium}
+      `;
+    }
+
+    // chat
+    if (type == "chat") {
+      const chats = await client.invoke(
+        new Api.messages.GetChats({
+          id: [chatId],
+        })
+      );
+      let chat = chats.chats[0];
+      message = `
+title : ${chat.title}
+id : ${chat.id.value}
+deactivated : ${chat.deactivated}
+callActive : ${chat.callActive}
+noforwards : ${chat.noforwards}
+participants count : ${chat.participantsCount}
+supergroup : ${chat.migratedTo ? "true" : "false"}
+admin rights : ${JSON.stringify(chat.adminRights, "\n", " ").replaceAll(
+        '"',
+        " "
+      )}
+  banned rights : ${JSON.stringify(
+    chat.defaultBannedRights,
+    "\n",
+    " "
+  ).replaceAll('"', " ")}
+  `;
+    }
+
+    // channel
+    if (type == "channel") {
+      const chats = await client.invoke(
+        new Api.channels.GetChannels({
+          id: [chatId],
+        })
+      );
+      let chat = chats.chats[0];
+      console.log(chat);
+      message = `
+title : ${chat.title}
+id : ${chat.id.value}
+broadcast : ${chat.broadcast}
+verified : ${chat.verified}
+megagroup : ${chat.megagroup}
+restricted : ${chat.restricted}
+signatures : ${chat.signatures}
+scam : ${chat.scam}
+gigagroup : ${chat.gigagroup}
+joinToSend : ${chat.joinToSend}
+forum : ${chat.forum}
+callActive : ${chat.callActive}
+noforwards : ${chat.noforwards}
+participants count : ${chat.participantsCount}
+supergroup : ${chat.migratedTo ? "true" : "false"}
+admin rights : ${JSON.stringify(chat.adminRights, "\n", " ").replaceAll(
+        '"',
+        " "
+      )}
+  banned rights : ${JSON.stringify(
+    chat.defaultBannedRights,
+    "\n",
+    " "
+  ).replaceAll('"', " ")}
+  `;
+    }
+
+    // shared code
+    client.sendMessage(chatId, {
+      replyTo: event.message.id,
+      message,
+    });
+    return;
+  }
+
+  // an spicific target
+  if (!event.message.repyTo) {
+    let message;
+
+    // users
+    if (type == "user" || type == "chat") {
+      const result = await client.invoke(
+        new Api.messages.GetMessages({
+          id: [event.message.replyTo.replyToMsgId],
+          channel: chatId,
+        })
+      );
+
+      const user = result.users[0];
+      const targetId = result.users[0].id.value;
+      message = `
+id : ${targetId}
+first name : ${user.firstName || "undefined"} 
+last name : ${user?.lastName || "undefined"}
+username : ${user?.username || "undefined"}
+deleted : ${user.deleted}
+bot : ${user.bot}
+verified : ${user.verified}
+restricted : ${user.restricted}
+scam : ${user.scam}
+fake : ${user.fake}
+premium : ${user.premium}
+  `;
+    }
+
+    // channels
+    if (type == "channel") {
+      const result = await client.invoke(
+        new Api.channels.GetMessages({
+          id: [event.message.replyTo.replyToMsgId],
+          channel: chatId,
+        })
+      );
+
+      const user = result.users[0];
+      const targetId = result.users[0].id.value;
+      message = `
+id : ${targetId}
+first name : ${user.firstName || "undefined"} 
+last name : ${user?.lastName || "undefined"}
+username : ${user?.username || "undefined"}
+deleted : ${user.deleted}
+bot : ${user.bot}
+verified : ${user.verified}
+restricted : ${user.restricted}
+scam : ${user.scam}
+fake : ${user.fake}
+premium : ${user.premium}
+  `;
+    }
+
+    // shared code
+    client.sendMessage(chatId, {
+      message,
+      replyTo: event.message.id,
+    });
+  }
 }
